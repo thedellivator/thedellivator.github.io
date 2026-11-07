@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#ffffff">
+<title>Baseball Scorebook</title>
+<style>
+:root{--ink:#111;--paper:#fff;--wash:#f0f0f0;--line:#777;--muted:#555;--hit:#ddd}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+body{font-size:17px;line-height:1.25}
+button,input,select{font:inherit;color:inherit}
+button{background:#fff;border:2px solid #111;border-radius:8px;padding:13px 10px;min-height:52px;font-weight:700;touch-action:manipulation}
+button:active,.selected{background:#111!important;color:#fff!important}
+button:disabled{opacity:.35}
+input,select{width:100%;min-height:46px;border:2px solid #555;border-radius:6px;padding:8px;background:#fff}
+label{font-size:14px;font-weight:700;display:block;margin:7px 0 4px}
+header{position:sticky;top:0;background:#fff;border-bottom:3px solid #111;padding:10px 12px;z-index:5}
+.brand{font-size:12px;letter-spacing:2px;font-weight:800}
+.headrow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+h1{font-size:22px;margin:4px 0}
+main{max-width:760px;margin:auto;padding:12px 12px 95px}
+nav{position:sticky;bottom:0;background:#fff;border-top:3px solid #111;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:7px;z-index:6}
+nav button{font-size:13px;padding:8px 3px;min-height:48px}
+.panel{border:2px solid #111;border-radius:10px;padding:12px;margin:10px 0;background:#fff}
+.muted{color:var(--muted);font-size:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.score{font-size:34px;font-weight:900}
+.teamname{font-size:13px;font-weight:800;letter-spacing:1px}
+.big{font-size:22px;min-height:65px}
+.primary{background:#111;color:#fff}
+.small{font-size:13px;min-height:40px;padding:8px}
+.row{display:flex;align-items:center;gap:8px}
+.row>*{flex:1}
+.between{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.stat{background:var(--wash);border:1px solid #555;border-radius:8px;padding:10px;text-align:center}
+.stat strong{display:block;font-size:28px}
+.stat span{font-size:12px;font-weight:800;letter-spacing:.5px}
+.player{display:grid;grid-template-columns:44px 1fr 78px 44px;gap:6px;align-items:center;border-bottom:1px solid #aaa;padding:7px 0}
+.player:last-child{border:0}
+.player input{min-height:40px;padding:5px}
+.player button{min-height:40px;padding:5px}
+.badge{border:1px solid #111;border-radius:20px;padding:3px 8px;font-size:12px;font-weight:700}
+.hidden{display:none!important}
+.diamond{width:190px;height:160px;margin:4px auto;position:relative}
+.diamond svg{width:100%;height:100%}
+.basebtn{position:absolute;width:35px;height:35px;min-height:35px;padding:0;border-radius:4px;transform:rotate(45deg);font-size:0;background:white}
+.basebtn.occupied{background:#111}
+#first{right:24px;top:59px}#second{left:77px;top:8px}#third{left:24px;top:59px}
+.event{padding:7px 0;border-bottom:1px solid #aaa;font-size:14px}
+.notice{background:#eee;border:1px solid #555;padding:9px;border-radius:6px;font-size:14px}
+@media(min-width:600px){main{padding-left:20px;padding-right:20px}.big{min-height:72px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="headrow"><div><div class="brand">THE POCKET SCOREKEEPER</div><h1>BASEBALL SCOREBOOK</h1></div><span class="badge" id="saveStatus">SAVED ON DEVICE</span></div>
+</header>
+<main>
+<section id="home">
+ <div class="panel">
+  <div class="brand">YOUR SCOREBOOK</div><h1>Ready for the first pitch?</h1>
+  <p class="muted">Set up both teams, then open the live scorebook. Your changes are saved on this device's browser.</p>
+  <div class="grid2">
+   <button class="big" onclick="show('homeRoster')">HOME TEAM<br><small>Roster & lineup</small></button>
+   <button class="big" onclick="show('awayRoster')">AWAY TEAM<br><small>Roster & lineup</small></button>
+  </div>
+ </div>
+ <div class="panel">
+  <h2>Game setup</h2>
+  <label>Home team name</label><input id="homeName" value="Home Team" onchange="save()">
+  <label>Away team name</label><input id="awayName" value="Away Team" onchange="save()">
+  <div class="grid2">
+   <div><label>Innings scheduled</label><select id="innings" onchange="save()"><option>6</option><option selected>7</option><option>9</option><option>10</option></select></div>
+   <div><label>Starting inning</label><select id="startHalf" onchange="save()"><option value="top">Top</option><option value="bottom">Bottom</option></select></div>
+  </div>
+  <button class="primary" style="width:100%;margin-top:12px" onclick="startGame()">START / RESUME GAME</button>
+ </div>
+ <div class="panel"><div class="between"><h2>Game at a glance</h2><button class="small" onclick="resetGame()">NEW GAME</button></div><div id="miniScore" class="muted">No game started yet.</div></div>
+</section>
+
+<section id="homeRoster" class="hidden">
+ <div class="between"><h1>Home roster</h1><span class="badge">UNLIMITED PLAYERS</span></div>
+ <p class="muted">Add the full squad. Set each player's number, name and position. Use the order buttons to arrange the batting lineup.</p>
+ <label>Team name</label><input id="homeRosterName" onchange="syncTeamName('home')">
+ <div class="between"><h2>Players</h2><button class="small" onclick="addPlayer('home')">+ ADD PLAYER</button></div>
+ <div id="homePlayers"></div>
+</section>
+
+<section id="awayRoster" class="hidden">
+ <div class="between"><h1>Away roster</h1><span class="badge">UNLIMITED PLAYERS</span></div>
+ <p class="muted">This roster is independent from the home team. Set the batting order and positions here.</p>
+ <label>Team name</label><input id="awayRosterName" onchange="syncTeamName('away')">
+ <div class="between"><h2>Players</h2><button class="small" onclick="addPlayer('away')">+ ADD PLAYER</button></div>
+ <div id="awayPlayers"></div>
+</section>
+
+<section id="live" class="hidden">
+ <div class="between"><h1>Live scorebook</h1><span class="badge" id="gameStatus">IN PROGRESS</span></div>
+ <div class="panel">
+  <div class="grid2">
+   <div class="stat"><span id="homeLabel">HOME</span><strong id="homeRuns">0</strong></div>
+   <div class="stat"><span id="awayLabel">AWAY</span><strong id="awayRuns">0</strong></div>
+  </div>
+  <div class="between" style="margin-top:10px"><strong id="inningLabel">Top 1st</strong><span id="outsLabel">0 outs</span></div>
+  <div class="muted" id="halfHint">Away batting</div>
+ </div>
+ <div class="panel">
+  <div class="between"><h2>At bat</h2><span class="badge" id="batterOrder">Batter 1</span></div>
+  <strong id="batterName">Set up the roster</strong><div class="muted" id="batterInfo">Jersey / position</div>
+  <div class="grid3" style="margin-top:12px">
+   <div class="stat"><strong id="balls">0</strong><span>BALLS</span></div>
+   <div class="stat"><strong id="strikes">0</strong><span>STRIKES</span></div>
+   <div class="stat"><strong id="outs">0</strong><span>OUTS</span></div>
+  </div>
+  <div class="grid2" style="margin-top:10px">
+   <button class="big" onclick="pitch('ball')">BALL +1</button>
+   <button class="big" onclick="pitch('strike')">STRIKE +1</button>
+   <button onclick="pitch('foul')">FOUL</button>
+   <button onclick="pitch('inplay')">BALL IN PLAY</button>
+  </div>
+  <div class="notice" style="margin-top:9px">A foul adds a pitch. With fewer than 2 strikes it does not add a strike. A foul bunt with 2 strikes is a strikeout.</div>
+ </div>
+ <div class="panel">
+  <div class="between"><h2>Pitching</h2><span class="badge" id="pitcherTeam">Pitcher</span></div>
+  <strong id="pitcherName">No pitcher selected</strong>
+  <div class="grid2" style="margin-top:8px">
+   <div class="stat"><strong id="pitchCount">0</strong><span>GAME PITCHES</span></div>
+   <div class="stat"><strong id="pitchInning">0</strong><span>THIS INNING</span></div>
+  </div>
+  <label>Current pitcher</label><select id="pitcherSelect" onchange="changePitcher()"></select>
+ </div>
+ <div class="panel">
+  <div class="between"><h2>Runners on base</h2><span class="muted">Tap a base to toggle</span></div>
+  <div class="diamond">
+   <svg viewBox="0 0 190 160" aria-hidden="true"><path d="M95 13 L174 80 L95 147 L16 80 Z" fill="none" stroke="#111" stroke-width="2"/><path d="M95 13 L95 147" stroke="#aaa" stroke-dasharray="4 4"/></svg>
+   <button id="second" class="basebtn" onclick="toggleBase(1)" aria-label="Second base">2B</button>
+   <button id="third" class="basebtn" onclick="toggleBase(2)" aria-label="Third base">3B</button>
+   <button id="first" class="basebtn" onclick="toggleBase(0)" aria-label="First base">1B</button>
+  </div>
+  <div class="muted" id="baseSummary" style="text-align:center">Bases empty</div>
+ </div>
+ <div class="panel">
+  <h2>Record the play</h2>
+  <div class="grid2">
+   <button onclick="result('Single')">SINGLE</button><button onclick="result('Double')">DOUBLE</button>
+   <button onclick="result('Triple')">TRIPLE</button><button onclick="result('Home run')">HOME RUN</button>
+   <button onclick="result('Walk')">WALK</button><button onclick="result('Hit by pitch')">HIT BY PITCH</button>
+   <button onclick="result('Strikeout')">STRIKEOUT</button><button onclick="result('Ground out')">GROUND OUT</button>
+   <button onclick="result('Fly out')">FLY OUT</button><button onclick="result('Error')">ERROR / REACH</button>
+   <button onclick="result('Sacrifice fly')">SAC FLY</button><button onclick="result('Fielder choice')">FIELDER'S CHOICE</button>
+  </div>
+  <p class="muted">After choosing a play, review the base situation and score. You can correct the last action with Undo.</p>
+ </div>
+ <div class="panel">
+  <div class="between"><h2>Recent pitches & plays</h2><button class="small" onclick="undo()">UNDO LAST</button></div>
+  <div id="history"></div>
+ </div>
+ <div class="grid2"><button onclick="changeHalf()">END HALF-INNING</button><button onclick="finishGame()">END GAME</button></div>
+</section>
+
+<section id="stats" class="hidden">
+ <h1>Game statistics</h1>
+ <div class="panel"><h2>Score</h2><div id="statsScore"></div></div>
+ <div class="panel"><h2>Pitcher pitch counts</h2><div id="pitchStats"></div></div>
+ <div class="panel"><h2>Play-by-play</h2><div id="fullHistory"></div></div>
+ <button style="width:100%" onclick="exportGame()">EXPORT GAME DATA</button>
+</section>
+</main>
+<nav>
+ <button onclick="show('home')">BOOK<br>HOME</button>
+ <button onclick="show('homeRoster')">HOME<br>ROSTER</button>
+ <button onclick="show('awayRoster')">AWAY<br>ROSTER</button>
+ <button onclick="show('live')">LIVE<br>SCORE</button>
+</nav>
+<script>
+const blank=()=>({home:{name:'Home Team',players:[]},away:{name:'Away Team',players:[]},innings:7,inning:1,half:'top',outs:0,balls:0,strikes:0,bases:[false,false,false],scores:{home:0,away:0},batIndex:{home:0,away:0},pitchCounts:{},currentPitcher:{home:'',away:''},pitchInning:0,history:[],started:false,finished:false});
+let S=blank(),undoStack=[];
+function load(){try{let x=localStorage.getItem('baseballScorebookKindle');if(x)S=Object.assign(blank(),JSON.parse(x));}catch(e){}}
+function save(){try{S.home.name=document.getElementById('homeName')?.value||S.home.name;S.away.name=document.getElementById('awayName')?.value||S.away.name;S.innings=+(document.getElementById('innings')?.value||S.innings);localStorage.setItem('baseballScorebookKindle',JSON.stringify(S));document.getElementById('saveStatus').textContent='SAVED ON DEVICE';}catch(e){document.getElementById('saveStatus').textContent='SAVE UNAVAILABLE';}render();}
+function snapshot(){undoStack.push(JSON.stringify(S));if(undoStack.length>80)undoStack.shift();}
+function undo(){if(!undoStack.length){alert('Nothing to undo yet.');return;}S=JSON.parse(undoStack.pop());save();}
+function show(id){document.querySelectorAll('main section').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');render();}
+function addPlayer(team){snapshot();S[team].players.push({id:Date.now()+Math.random(),num:'',name:'',pos:'',active:true});save();}
+function updatePlayer(team,id,key,val){let p=S[team].players.find(x=>x.id==id);if(p)p[key]=val;save();}
+function movePlayer(team,id,dir){snapshot();let a=S[team].players,i=a.findIndex(p=>p.id==id),j=i+dir;if(j>=0&&j<a.length)[a[i],a[j]]=[a[j],a[i]];save();}
+function removePlayer(team,id){if(!confirm('Remove this player from the roster?'))return;snapshot();S[team].players=S[team].players.filter(p=>p.id!=id);save();}
+function syncTeamName(t){S[t].name=document.getElementById(t+'RosterName').value;document.getElementById(t+'Name').value=S[t].name;save();}
+function renderRoster(t){let el=document.getElementById(t+'Players');el.innerHTML='';S[t].players.forEach((p,i)=>{let d=document.createElement('div');d.className='player';d.innerHTML=`<div><strong>${i+1}</strong></div><input aria-label="Jersey number" placeholder="#" value="${esc(p.num)}"><input aria-label="Player name" placeholder="Player name" value="${esc(p.name)}"><button class="small" aria-label="Remove player">×</button>`;let inputs=d.querySelectorAll('input');inputs[0].onchange=e=>updatePlayer(t,p.id,'num',e.target.value);inputs[1].onchange=e=>updatePlayer(t,p.id,'name',e.target.value);d.querySelector('button').onclick=()=>removePlayer(t,p.id);el.appendChild(d);let pos=document.createElement('div');pos.style.cssText='padding:0 0 7px 52px';pos.innerHTML=`<select aria-label="Position"><option value="">Position</option>${['P','C','1B','2B','3B','SS','LF','CF','RF','DH','UTL'].map(x=>`<option ${p.pos===x?'selected':''}>${x}</option>`).join('')}</select><div class="row" style="margin-top:5px"><button class="small">↑ MOVE UP</button><button class="small">↓ MOVE DOWN</button></div>`;pos.querySelector('select').onchange=e=>updatePlayer(t,p.id,'pos',e.target.value);pos.querySelectorAll('button')[0].onclick=()=>movePlayer(t,p.id,-1);pos.querySelectorAll('button')[1].onclick=()=>movePlayer(t,p.id,1);el.appendChild(pos);});if(!S[t].players.length)el.innerHTML='<p class="muted">No players yet. Add the first player above.</p>';}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function startGame(){S.home.name=document.getElementById('homeName').value||'Home Team';S.away.name=document.getElementById('awayName').value||'Away Team';S.innings=+document.getElementById('innings').value;S.started=true;save();show('live');}
+function battingTeam(){return S.half==='top'?'away':'home';}
+function fieldingTeam(){return S.half==='top'?'home':'away';}
+function batter(){let a=S[battingTeam()].players.filter(p=>p.active);if(!a.length)return null;return a[S.batIndex[battingTeam()]%a.length];}
+function pitch(type){if(!S.started){alert('Start the game first.');return;}snapshot();let f=fieldingTeam(),pid=S.currentPitcher[f];if(!pid){let p=S[f].players.find(x=>x.pos==='P')||S[f].players[0];if(p){pid=String(p.id);S.currentPitcher[f]=pid;}}
+if(pid){S.pitchCounts[pid]=(S.pitchCounts[pid]||0)+1;S.pitchInning++;}
+let note=type.toUpperCase();if(type==='ball'){S.balls++;if(S.balls>=4){S.balls=0;S.strikes=0;advance('Walk');note='BALL 4 — WALK';}}else if(type==='strike'){S.strikes++;if(S.strikes>=3){S.outs++;finishBatter();note='STRIKE 3 — STRIKEOUT';}}else if(type==='foul'){if(S.strikes<2)S.strikes++;note='FOUL';}else{note='BALL IN PLAY — SELECT RESULT';}
+log(note);save();}
+function finishBatter(){S.balls=0;S.strikes=0;S.batIndex[battingTeam()]++;if(S.outs>=3){S.outs=3;}}
+function scoreRun(){S.scores[battingTeam()]++;}
+function advance(kind){let b=S.bases.slice();if(kind==='Walk'||kind==='Hit by pitch'){if(b[0]){if(b[1]){if(b[2])scoreRun();b[2]=true;}b[1]=true;}b[0]=true;}S.bases=b;finishBatter();}
+function result(kind){if(!S.started){alert('Start the game first.');return;}snapshot();let b=S.bases.slice(),t=battingTeam(),note=kind; if(kind==='Walk'||kind==='Hit by pitch'){advance(kind);}else if(kind==='Single'||kind==='Error'||kind==='Fielder choice'){if(b[2])scoreRun();if(b[1])scoreRun();S.bases=[true,b[0],false];finishBatter();}else if(kind==='Double'){if(b[2])scoreRun();if(b[1])scoreRun();S.bases=[false,true,b[0]];finishBatter();}else if(kind==='Triple'){b.forEach(x=>{if(x)scoreRun()});S.bases=[false,false,true];finishBatter();}else if(kind==='Home run'){b.forEach(x=>{if(x)scoreRun()});scoreRun();S.bases=[false,false,false];finishBatter();}else if(kind==='Strikeout'||kind==='Ground out'||kind==='Fly out'){S.outs++;finishBatter();}else if(kind==='Sacrifice fly'){if(b[2])scoreRun();S.bases[2]=false;S.outs++;finishBatter();}
+log(kind);if(S.outs>=3){S.outs=3;}save();}
+function log(msg){S.history.unshift({inning:S.inning,half:S.half,msg,balls:S.balls,strikes:S.strikes,outs:S.outs,pitcher:S.currentPitcher[fieldingTeam()]||'',count:S.pitchCounts[S.currentPitcher[fieldingTeam()]]||0});}
+function toggleBase(i){snapshot();S.bases[i]=!S.bases[i];save();}
+function changePitcher(){let f=fieldingTeam();S.currentPitcher[f]=document.getElementById('pitcherSelect').value;save();}
+function changeHalf(){snapshot();S.balls=0;S.strikes=0;S.bases=[false,false,false];if(S.half==='top')S.half='bottom';else{S.half='top';S.inning++;}S.outs=0;S.pitchInning=0;if(S.inning>S.innings+1){S.finished=true;}save();}
+function finishGame(){snapshot();S.finished=true;save();show('stats');}
+function render(){['home','away'].forEach(t=>{let rn=document.getElementById(t+'RosterName');if(rn&&document.activeElement!==rn)rn.value=S[t].name;renderRoster(t);});let hn=document.getElementById('homeName'),an=document.getElementById('awayName');if(hn&&document.activeElement!==hn)hn.value=S.home.name;if(an&&document.activeElement!==an)an.value=S.away.name;
+let mini=document.getElementById('miniScore');if(mini)mini.textContent=S.started?`${S.home.name} ${S.scores.home} — ${S.away.name} ${S.scores.away} · ${S.half==='top'?'Top':'Bottom'} ${S.inning}`:'No game started yet.';
+let b=batter(),bt=battingTeam(),ft=fieldingTeam();set('homeLabel',S.home.name);set('awayLabel',S.away.name);set('homeRuns',S.scores.home);set('awayRuns',S.scores.away);set('inningLabel',(S.half==='top'?'Top ':'Bottom ')+S.inning);set('outsLabel',S.outs+' outs');set('halfHint',S[bt].name+' batting');set('batterName',b?(b.num?'#'+b.num+' ':'')+b.name:'No batter in roster');set('batterInfo',b?(b.pos||'Position not set')+' · '+(S.batIndex[bt]+1)+' in batting order':'Add players to the batting roster');set('batterOrder','Batter '+(S.batIndex[bt]+1));set('balls',S.balls);set('strikes',S.strikes);set('outs',S.outs);let pid=S.currentPitcher[ft],pitcher=S[ft].players.find(p=>String(p.id)===String(pid));set('pitcherName',pitcher?`${pitcher.num?'#'+pitcher.num+' ':''}${pitcher.name}`:'No pitcher selected');set('pitcherTeam',S[ft].name);set('pitchCount',pid?(S.pitchCounts[pid]||0):0);set('pitchInning',S.pitchInning);
+let sel=document.getElementById('pitcherSelect');if(sel){let old=S.currentPitcher[ft];sel.innerHTML='<option value="">Select pitcher</option>'+S[ft].players.map(p=>`<option value="${p.id}">${esc(p.num?'#'+p.num+' ':'')}${esc(p.name||'Unnamed player')}</option>`).join('');sel.value=old;}
+['first','second','third'].forEach((id,i)=>document.getElementById(id).classList.toggle('occupied',S.bases[i]));set('baseSummary',S.bases.some(Boolean)?['First','Second','Third'].filter((x,i)=>S.bases[i]).join(' and ')+' occupied':'Bases empty');set('gameStatus',S.finished?'GAME ENDED':'IN PROGRESS');let hist=document.getElementById('history');if(hist)hist.innerHTML=S.history.slice(0,8).map(h=>`<div class="event">${h.half==='top'?'Top':'Bottom'} ${h.inning}: ${esc(h.msg)}</div>`).join('')||'<p class="muted">No pitches recorded yet.</p>';let fs=document.getElementById('fullHistory');if(fs)fs.innerHTML=S.history.map(h=>`<div class="event">${h.half==='top'?'Top':'Bottom'} ${h.inning}: ${esc(h.msg)}</div>`).join('')||'No events recorded.';let ss=document.getElementById('statsScore');if(ss)ss.textContent=`${S.home.name} ${S.scores.home} — ${S.away.name} ${S.scores.away}`;let ps=document.getElementById('pitchStats');if(ps)ps.innerHTML=Object.entries(S.pitchCounts).map(([id,n])=>{let p=[...S.home.players,...S.away.players].find(x=>String(x.id)===String(id));return `<div class="event">${esc((p&&p.name)||'Pitcher')} — ${n} pitches</div>`}).join('')||'No pitches yet.';}
+function set(id,v){let e=document.getElementById(id);if(e)e.textContent=v;}
+function exportGame(){let blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='baseball-scorebook-game.json';a.click();URL.revokeObjectURL(a.href);}
+function resetGame(){if(!confirm('Start a new game? This clears the current score and history but keeps team rosters.'))return;let keep={home:S.home,away:S.away,innings:S.innings};S=Object.assign(blank(),keep);undoStack=[];save();}
+load();document.getElementById('homeName').value=S.home.name;document.getElementById('awayName').value=S.away.name;document.getElementById('innings').value=S.innings;render();
+</script>
+</body>
+</html>
